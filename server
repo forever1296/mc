@@ -1,0 +1,3055 @@
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+#https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=epl&date=20191201
+
+    # 해당 url에서 html을 불러옴.
+url = requests.get('https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=bundesliga&date=20191201')
+urlt = requests.get('https://sports.news.naver.com/wfootball/record/index.nhn?category=bundesliga&tab=team')
+urlc = url.content
+urlct = urlt.content
+html = str(BeautifulSoup(urlc, "html.parser"))
+htmlt = str(BeautifulSoup(urlct, "html.parser"))
+#datat = str(htmlt.find_all("script", {"type": "text/javascript"}))
+rep1 = html.replace(':','')
+rep2 = rep1.replace(',','')
+rep1t = htmlt.replace(':','')
+rep2t = rep1t.replace(',','')
+
+sdata = rep2.split('"')
+sdatat = rep2t.split('"')
+#print(sdatat)
+
+rdata = list()
+rdatat = list()
+sdatatsp = list()
+i=0
+j=1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+while i < len(sdata):
+    if sdata[i] == 'playerName':
+        rdata.append(str(j)+'위')
+        rdata.append(str(sdata[i+2]))
+        j=j+1
+    elif sdata[i] =='teamName':
+        rdata.append(str(sdata[i+2]))
+    elif sdata[i] == 'goals':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'assist':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'attackPoint':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'shot':
+        rdata.append(str(sdata[i+1]))
+    elif sdata[i] == 'foul':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'booking':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'dismissal':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'cornerKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'penaltyKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'offside':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'onTargetShot':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'gameCount':
+        rdata.append(str(sdata[i + 1]))
+    i=i+1
+
+u=0
+k=0
+while u<len(rdata)/15:
+
+    cursor = conn.cursor()
+    a = rdata[k]
+    b = rdata[k+1]
+    c = rdata[k+2]
+    d = rdata[k+3]
+    e = rdata[k+4]
+    f = rdata[k+5]
+    g = rdata[k + 6]
+    aa = rdata[k + 7]
+    bb = rdata[k + 8]
+    cc = rdata[k + 9]
+    dd = rdata[k + 10]
+    ee = rdata[k + 11]
+    ff = rdata[k + 12]
+    gg = rdata[k + 13]
+    hh = rdata[k + 14]
+    sql = "INSERT INTO bundesligarecord(a,b,c,d,e,f,g,aa,bb,cc,dd,ee,ff,gg,hh) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"','"+ dd +"','"+ ee +"','"+ ff +"','"+ gg +"','"+ hh +"')"
+    k = k+15
+    cursor.execute(sql)
+    u = u + 1
+#순위 선수이름 소속 득점 도움 공격포인트 슈팅 파울 경고 퇴장 코너킥 패널티킥 오프사이드 유효슈팅 경기수
+#print(rdata)
+
+i=0
+j=1
+#팀순위 1 ~ 20
+while i < len(sdatat):
+    if sdatat[i] == 'teamName':
+        rdatat.append(str(j)+'위')
+        rdatat.append(str(sdatat[i + 2]))
+        rdatat.append(str(sdatat[i + 15]))
+        rdatat.append(str(sdatat[i + 7]))
+        rdatat.append(str(sdatat[i + 27]))
+        sdatatsp = sdatat[i+39].split('}')
+        rdatat.append(str(sdatatsp[0]))
+        rdatat.append(str(sdatat[i + 25]))
+        rdatat.append(str(sdatat[i + 5]))
+        rdatat.append(str(sdatat[i + 21]))
+        rdatat.append(str(sdatat[i + 29]))
+        j = j + 1
+    i = i + 1
+
+#순위 팀명 승점 경기수 승 무 패 득점 실점 득실차
+#1 ㄼㅍ 40 14 13 1 0 32 12 20
+jj=0
+k=0
+while jj<18:
+    cursor = conn.cursor()
+    a = rdatat[k]
+    b = rdatat[k+1]
+    c = rdatat[k+2]
+    d = rdatat[k+3]
+    e = rdatat[k+4]
+    f = rdatat[k+5]
+    g = rdatat[k+6]
+    aa = rdatat[k+7]
+    bb = rdatat[k+8]
+    cc = rdatat[k+9]
+    sql = "INSERT INTO bundesligarecordt(a,b,c,d,e,f,g,aa,bb,cc) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"')"
+    k = k+10
+    cursor.execute(sql)
+    jj = jj + 1
+conn.commit()
+conn.close()
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+#https://sports.news.naver.com/wfootball/record/index.nhn
+
+# 해당 url에서 html을 불러옴.
+url = requests.get('https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=epl&date=20191201')
+urlt = requests.get('https://sports.news.naver.com/wfootball/record/index.nhn?category=epl&tab=team')
+urlc = url.content
+urlct = urlt.content
+html = str(BeautifulSoup(urlc, "html.parser"))
+htmlt = str(BeautifulSoup(urlct, "html.parser"))
+#datat = str(htmlt.find_all("script", {"type": "text/javascript"}))
+rep1 = html.replace(':','')
+rep2 = rep1.replace(',','')
+rep1t = htmlt.replace(':','')
+rep2t = rep1t.replace(',','')
+
+sdata = rep2.split('"')
+sdatat = rep2t.split('"')
+#print(sdatat)
+
+rdata = list()
+rdatat = list()
+sdatatsp = list()
+i=0
+j=1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#개인순위 1~20
+while i < len(sdata):
+    if sdata[i] == 'playerName':
+        rdata.append(str(j)+'위')
+        rdata.append(str(sdata[i+2]))
+        j=j+1
+    elif sdata[i] =='teamName':
+        rdata.append(str(sdata[i+2]))
+    elif sdata[i] == 'goals':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'assist':
+        rdata.append(str(sdata[i+1]))
+    elif sdata[i] == 'attackPoint':
+        rdata.append(str(sdata[i+1]))
+    elif sdata[i] == 'shot':
+        rdata.append(str(sdata[i+1]))
+    elif sdata[i] == 'foul':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'booking':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'dismissal':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'cornerKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'penaltyKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'offside':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'onTargetShot':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'gameCount':
+        rdata.append(str(sdata[i + 1]))
+    i=i+1
+
+u=0
+k=0
+while u<len(rdata)/15:
+
+    cursor = conn.cursor()
+    a = rdata[k]
+    b = rdata[k+1]
+    c = rdata[k+2]
+    d = rdata[k+3]
+    e = rdata[k+4]
+    f = rdata[k+5]
+    g = rdata[k + 6]
+    aa = rdata[k + 7]
+    bb = rdata[k + 8]
+    cc = rdata[k + 9]
+    dd = rdata[k + 10]
+    ee = rdata[k + 11]
+    ff = rdata[k + 12]
+    gg = rdata[k + 13]
+    hh = rdata[k + 14]
+    sql = "INSERT INTO eplrecord(a,b,c,d,e,f,g,aa,bb,cc,dd,ee,ff,gg,hh) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"','"+ dd +"','"+ ee +"','"+ ff +"','"+ gg +"','"+ hh +"')"
+    k = k+15
+    cursor.execute(sql)
+    u = u + 1
+
+#순위 선수이름 소속 득점 도움 공격포인트 슈팅 파울 경고 퇴장 코너킥 패널티킥 오프사이드 유효슈팅 경기수
+#print(rdata)
+#15
+
+
+
+i=0
+j=1
+#팀순위 1 ~ 20
+while i < len(sdatat):
+    if sdatat[i] == 'teamName':
+        rdatat.append(str(j)+'위')
+        rdatat.append(str(sdatat[i + 2]))
+        rdatat.append(str(sdatat[i + 15]))
+        rdatat.append(str(sdatat[i + 7]))
+        rdatat.append(str(sdatat[i + 27]))
+        sdatatsp = sdatat[i+39].split('}')
+        rdatat.append(str(sdatatsp[0]))
+        rdatat.append(str(sdatat[i + 25]))
+        rdatat.append(str(sdatat[i + 5]))
+        rdatat.append(str(sdatat[i + 21]))
+        rdatat.append(str(sdatat[i + 29]))
+        j = j + 1
+    i = i + 1
+
+#순위 팀명 승점 경기수 승 무 패 득점 실점 득실차
+#1 ㄼㅍ 40 14 13 1 0 32 12 20
+#print(rdatat)
+#10
+
+
+jj=0
+k=0
+while jj<len(rdatat)/10:
+    cursor = conn.cursor()
+    a = rdatat[k]
+    b = rdatat[k+1]
+    c = rdatat[k+2]
+    d = rdatat[k+3]
+    e = rdatat[k+4]
+    f = rdatat[k+5]
+    g = rdatat[k+6]
+    aa = rdatat[k+7]
+    bb = rdatat[k+8]
+    cc = rdatat[k+9]
+    sql = "INSERT INTO eplrecordt(a,b,c,d,e,f,g,aa,bb,cc) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"')"
+    k = k+10
+    cursor.execute(sql)
+    jj = jj + 1
+conn.commit()
+conn.close()
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+#https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=epl&date=20191201
+
+    # 해당 url에서 html을 불러옴.
+url = requests.get('https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=eredivisie&date=20191201')
+urlt = requests.get('https://sports.news.naver.com/wfootball/record/index.nhn?category=eredivisie&tab=team')
+urlc = url.content
+urlct = urlt.content
+html = str(BeautifulSoup(urlc, "html.parser"))
+htmlt = str(BeautifulSoup(urlct, "html.parser"))
+#datat = str(htmlt.find_all("script", {"type": "text/javascript"}))
+rep1 = html.replace(':','')
+rep2 = rep1.replace(',','')
+rep1t = htmlt.replace(':','')
+rep2t = rep1t.replace(',','')
+
+sdata = rep2.split('"')
+sdatat = rep2t.split('"')
+#print(sdatat)
+
+rdata = list()
+rdatat = list()
+sdatatsp = list()
+i=0
+j=1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+while i < len(sdata):
+    if sdata[i] == 'playerName':
+        rdata.append(str(j)+'위')
+        rdata.append(str(sdata[i+2]))
+        j=j+1
+    elif sdata[i] =='teamName':
+        rdata.append(str(sdata[i+2]))
+    elif sdata[i] == 'goals':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'assist':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'attackPoint':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'shot':
+        rdata.append(str(sdata[i+1]))
+    elif sdata[i] == 'foul':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'booking':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'dismissal':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'cornerKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'penaltyKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'offside':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'onTargetShot':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'gameCount':
+        rdata.append(str(sdata[i + 1]))
+    i=i+1
+
+u=0
+k=0
+while u<len(rdata)/15:
+
+    cursor = conn.cursor()
+    a = rdata[k]
+    b = rdata[k+1]
+    c = rdata[k+2]
+    d = rdata[k+3]
+    e = rdata[k+4]
+    f = rdata[k+5]
+    g = rdata[k + 6]
+    aa = rdata[k + 7]
+    bb = rdata[k + 8]
+    cc = rdata[k + 9]
+    dd = rdata[k + 10]
+    ee = rdata[k + 11]
+    ff = rdata[k + 12]
+    gg = rdata[k + 13]
+    hh = rdata[k + 14]
+    sql = "INSERT INTO eredivisierecord(a,b,c,d,e,f,g,aa,bb,cc,dd,ee,ff,gg,hh) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"','"+ dd +"','"+ ee +"','"+ ff +"','"+ gg +"','"+ hh +"')"
+    k = k+15
+    cursor.execute(sql)
+    u = u + 1
+#순위 선수이름 소속 득점 도움 공격포인트 슈팅 파울 경고 퇴장 코너킥 패널티킥 오프사이드 유효슈팅 경기수
+#print(rdata)
+
+i=0
+j=1
+#팀순위 1 ~ 20
+while i < len(sdatat):
+    if sdatat[i] == 'teamName':
+        rdatat.append(str(j)+'위')
+        rdatat.append(str(sdatat[i + 2]))
+        rdatat.append(str(sdatat[i + 15]))
+        rdatat.append(str(sdatat[i + 7]))
+        rdatat.append(str(sdatat[i + 27]))
+        sdatatsp = sdatat[i+39].split('}')
+        rdatat.append(str(sdatatsp[0]))
+        rdatat.append(str(sdatat[i + 25]))
+        rdatat.append(str(sdatat[i + 5]))
+        rdatat.append(str(sdatat[i + 21]))
+        rdatat.append(str(sdatat[i + 29]))
+        j = j + 1
+    i = i + 1
+
+#순위 팀명 승점 경기수 승 무 패 득점 실점 득실차
+#1 ㄼㅍ 40 14 13 1 0 32 12 20
+jj=0
+k=0
+while jj<18:
+    cursor = conn.cursor()
+    a = rdatat[k]
+    b = rdatat[k+1]
+    c = rdatat[k+2]
+    d = rdatat[k+3]
+    e = rdatat[k+4]
+    f = rdatat[k+5]
+    g = rdatat[k+6]
+    aa = rdatat[k+7]
+    bb = rdatat[k+8]
+    cc = rdatat[k+9]
+    sql = "INSERT INTO eredivisierecordt(a,b,c,d,e,f,g,aa,bb,cc) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"')"
+    k = k+10
+    cursor.execute(sql)
+    jj = jj + 1
+conn.commit()
+conn.close()
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+#https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=primera&date=20191201
+#https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=epl&date=20191201
+
+    # 해당 url에서 html을 불러옴.
+
+
+url = requests.get('https://sports.news.naver.com/kfootball/record/index.nhn?category=kleague&year=2019')
+urlc = url.content
+html = str(BeautifulSoup(urlc, "html.parser"))
+#data = str(html.find_all("script", {"type": "text/javascript"}))
+#datat = str(html.find_all("script"))
+rep1 = html.replace(':','')
+rep2 = rep1.replace(',','')
+rep1t = html.replace(':','')
+rep2t = rep1t.replace(',','')
+sdata = rep2.split('"')
+sdatat = rep2t.split('"')
+
+#print(datat)
+
+rdata = list()
+rdatat = list()
+sdatasp = list()
+i=0
+j=1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+while i < len(sdata):
+    if sdata[i] == 'rank':
+        if sdata[i+1] == str(j):
+            rdata.append(str(j) + '위')
+            rdata.append(str(sdata[i - 36])) #
+            rdata.append(str(sdata[i - 21])) #
+            rdata.append(str(sdata[i - 29]))
+            sdatasp = sdata[i + 5].split('}')
+            rdata.append(str(sdatasp[0]))
+            rdata.append(str(sdata[i - 7]))
+            rdata.append(str(sdata[i - 23]))
+            rdata.append(str(sdata[i - 33]))
+            rdata.append(str(sdata[i - 11]))
+            rdata.append(str(sdata[i - 1]))
+            j = j + 1
+        if j==7:
+            i=0
+    i = i + 1
+    # 순위 팀명 승점 경기수 승 무 패 득점 실점 득실차
+u=0
+k=0
+while u<len(rdata)/15-1:
+
+    cursor = conn.cursor()
+    a = rdata[k]
+    b = rdata[k+1]
+    c = rdata[k+2]
+    d = rdata[k+3]
+    e = rdata[k+4]
+    f = rdata[k+5]
+    g = rdata[k + 6]
+    aa = rdata[k + 7]
+    bb = rdata[k + 8]
+    cc = rdata[k + 9]
+    sql = "INSERT INTO kleaguerecordt(a,b,c,d,e,f,g,aa,bb,cc) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"')"
+    k = k+10
+    cursor.execute(sql)
+    u = u + 1
+
+i=0
+j=0
+while i < len(sdatat):
+    if sdatat[i] == 'goalPerSt':
+        rdatat.append(str(j) + '위')
+        rdatat.append(str(sdatat[i + 34]))
+        rdatat.append(str(sdatat[i - 4]))
+        rdatat.append(str(sdatat[i - 1]))
+        #sdatasp = sdata[i + 5].split('}')
+        #rdata.append(str(sdatasp[0]))
+        rdatat.append(str(sdatat[i + 55]))
+        rdatat.append(str(sdatat[i + 23]))
+        rdatat.append(str(sdatat[i + 11]))
+        rdatat.append(str(sdatat[i + 53]))
+        rdatat.append(str(sdatat[i + 25]))
+        rdatat.append(str(sdatat[i + 46]))
+        rdatat.append(str(sdatat[i + 37]))
+        rdatat.append(str(sdatat[i + 5]))
+        j = j + 1
+    i = i + 1
+
+#순위 선수이름 소속 득점 도움 공격포인트 슈팅 오프사이드 유효슈팅 평균평점 mvp bet11
+jj=0
+k=12
+while jj<len(rdatat)/12-1:
+    cursor = conn.cursor()
+    a = rdatat[k]
+    b = rdatat[k+1]
+    c = rdatat[k+2]
+    d = rdatat[k+3]
+    e = rdatat[k+4]
+    f = rdatat[k+5]
+    g = rdatat[k+6]
+    aa = rdatat[k+7]
+    bb = rdatat[k+8]
+    cc = rdatat[k+9]
+    dd = rdatat[k+10]
+    ee = rdatat[k+11]
+    sql = "INSERT INTO kleaguerecord(a,b,c,d,e,f,g,aa,bb,cc,dd,ee) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"','"+ dd +"','"+ ee +"')"
+    k = k+12
+    cursor.execute(sql)
+    jj = jj + 1
+conn.commit()
+conn.close()
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+#https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=primera&date=20191201
+#https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=epl&date=20191201
+
+    # 해당 url에서 html을 불러옴.
+
+
+url = requests.get('https://sports.news.naver.com/kfootball/record/index.nhn?category=kleague2&year=2019')
+urlc = url.content
+html = str(BeautifulSoup(urlc, "html.parser"))
+#data = str(html.find_all("script", {"type": "text/javascript"}))
+#datat = str(html.find_all("script"))
+rep1 = html.replace(':','')
+rep2 = rep1.replace(',','')
+rep1t = htmlt.replace(':','')
+rep2t = rep1t.replace(',','')
+sdata = rep2.split('"')
+sdatat = rep2t.split('"')
+
+#print(datat)
+
+rdata = list()
+rdatat = list()
+sdatasp = list()
+i=0
+j=1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+while i < len(sdata):
+    if sdata[i] == 'rank':
+        if sdata[i+1] == str(j):
+            rdata.append(str(j) + '위')
+            rdata.append(str(sdata[i - 36])) #
+            rdata.append(str(sdata[i - 21])) #
+            rdata.append(str(sdata[i - 29]))
+            sdatasp = sdata[i + 5].split('}')
+            rdata.append(str(sdatasp[0]))
+            rdata.append(str(sdata[i - 7]))
+            rdata.append(str(sdata[i - 23]))
+            rdata.append(str(sdata[i - 33]))
+            rdata.append(str(sdata[i - 11]))
+            rdata.append(str(sdata[i - 1]))
+            j = j + 1
+    i = i + 1
+    # 순위 팀명 승점 경기수 승 무 패 득점 실점 득실차
+u=0
+k=0
+while u<len(rdata)/20:
+
+    cursor = conn.cursor()
+    a = rdata[k]
+    b = rdata[k+1]
+    c = rdata[k+2]
+    d = rdata[k+3]
+    e = rdata[k+4]
+    f = rdata[k+5]
+    g = rdata[k + 6]
+    aa = rdata[k + 7]
+    bb = rdata[k + 8]
+    cc = rdata[k + 9]
+    sql = "INSERT INTO kleague2recordt(a,b,c,d,e,f,g,aa,bb,cc) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"')"
+    k = k+10
+    cursor.execute(sql)
+    u = u + 1
+
+i=0
+j=0
+while i < len(sdatat):
+    if sdatat[i] == 'goalPerSt':
+        rdatat.append(str(j) + '위')
+        rdatat.append(str(sdatat[i + 34]))
+        rdatat.append(str(sdatat[i - 4]))
+        rdatat.append(str(sdatat[i - 1]))
+        #sdatasp = sdata[i + 5].split('}')
+        #rdata.append(str(sdatasp[0]))
+        rdatat.append(str(sdatat[i + 55]))
+        rdatat.append(str(sdatat[i + 23]))
+        rdatat.append(str(sdatat[i + 11]))
+        rdatat.append(str(sdatat[i + 53]))
+        rdatat.append(str(sdatat[i + 25]))
+        rdatat.append(str(sdatat[i + 46]))
+        rdatat.append(str(sdatat[i + 37]))
+        rdatat.append(str(sdatat[i + 5]))
+        j = j + 1
+    i = i + 1
+
+#순위 선수이름 소속 득점 도움 공격포인트 슈팅 오프사이드 유효슈팅 평균평점 mvp bet11
+jj=0
+k=12
+while jj<len(rdatat)/12-1:
+    cursor = conn.cursor()
+    a = rdatat[k]
+    b = rdatat[k+1]
+    c = rdatat[k+2]
+    d = rdatat[k+3]
+    e = rdatat[k+4]
+    f = rdatat[k+5]
+    g = rdatat[k+6]
+    aa = rdatat[k+7]
+    bb = rdatat[k+8]
+    cc = rdatat[k+9]
+    dd = rdatat[k+10]
+    ee = rdatat[k+11]
+    sql = "INSERT INTO kleague2record(a,b,c,d,e,f,g,aa,bb,cc,dd,ee) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"','"+ dd +"','"+ ee +"')"
+    k = k+12
+    cursor.execute(sql)
+    jj = jj + 1
+conn.commit()
+conn.close()
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+#https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=epl&date=20191201
+
+    # 해당 url에서 html을 불러옴.
+url = requests.get('https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=ligue1&date=20191201')
+urlt = requests.get('https://sports.news.naver.com/wfootball/record/index.nhn?category=ligue1&tab=team')
+urlc = url.content
+urlct = urlt.content
+html = str(BeautifulSoup(urlc, "html.parser"))
+htmlt = str(BeautifulSoup(urlct, "html.parser"))
+#datat = str(htmlt.find_all("script", {"type": "text/javascript"}))
+rep1 = html.replace(':','')
+rep2 = rep1.replace(',','')
+rep1t = htmlt.replace(':','')
+rep2t = rep1t.replace(',','')
+
+sdata = rep2.split('"')
+sdatat = rep2t.split('"')
+#print(sdatat)
+
+rdata = list()
+rdatat = list()
+sdatatsp = list()
+i=0
+j=1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+while i < len(sdata):
+    if sdata[i] == 'playerName':
+        rdata.append(str(j)+'위')
+        rdata.append(str(sdata[i+2]))
+        j=j+1
+    elif sdata[i] =='teamName':
+        rdata.append(str(sdata[i+2]))
+    elif sdata[i] == 'goals':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'assist':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'attackPoint':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'shot':
+        rdata.append(str(sdata[i+1]))
+    elif sdata[i] == 'foul':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'booking':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'dismissal':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'cornerKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'penaltyKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'offside':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'onTargetShot':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'gameCount':
+        rdata.append(str(sdata[i + 1]))
+    i=i+1
+
+u=0
+k=0
+while u<len(rdata)/15:
+
+    cursor = conn.cursor()
+    a = rdata[k]
+    b = rdata[k+1]
+    c = rdata[k+2]
+    d = rdata[k+3]
+    e = rdata[k+4]
+    f = rdata[k+5]
+    g = rdata[k + 6]
+    aa = rdata[k + 7]
+    bb = rdata[k + 8]
+    cc = rdata[k + 9]
+    dd = rdata[k + 10]
+    ee = rdata[k + 11]
+    ff = rdata[k + 12]
+    gg = rdata[k + 13]
+    hh = rdata[k + 14]
+    sql = "INSERT INTO ligue1record(a,b,c,d,e,f,g,aa,bb,cc,dd,ee,ff,gg,hh) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"','"+ dd +"','"+ ee +"','"+ ff +"','"+ gg +"','"+ hh +"')"
+    k = k+15
+    cursor.execute(sql)
+    u = u + 1
+#순위 선수이름 소속 득점 도움 공격포인트 슈팅 파울 경고 퇴장 코너킥 패널티킥 오프사이드 유효슈팅 경기수
+#print(rdata)
+
+i=0
+j=1
+#팀순위 1 ~ 20
+while i < len(sdatat):
+    if sdatat[i] == 'teamName':
+        rdatat.append(str(j)+'위')
+        rdatat.append(str(sdatat[i + 2]))
+        rdatat.append(str(sdatat[i + 15]))
+        rdatat.append(str(sdatat[i + 7]))
+        rdatat.append(str(sdatat[i + 27]))
+        sdatatsp = sdatat[i+39].split('}')
+        rdatat.append(str(sdatatsp[0]))
+        rdatat.append(str(sdatat[i + 25]))
+        rdatat.append(str(sdatat[i + 5]))
+        rdatat.append(str(sdatat[i + 21]))
+        rdatat.append(str(sdatat[i + 29]))
+        j = j + 1
+    i = i + 1
+
+#순위 팀명 승점 경기수 승 무 패 득점 실점 득실차
+#1 ㄼㅍ 40 14 13 1 0 32 12 20
+jj=0
+k=0
+while jj<20:
+    cursor = conn.cursor()
+    a = rdatat[k]
+    b = rdatat[k+1]
+    c = rdatat[k+2]
+    d = rdatat[k+3]
+    e = rdatat[k+4]
+    f = rdatat[k+5]
+    g = rdatat[k+6]
+    aa = rdatat[k+7]
+    bb = rdatat[k+8]
+    cc = rdatat[k+9]
+    sql = "INSERT INTO ligue1recordt(a,b,c,d,e,f,g,aa,bb,cc) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"')"
+    k = k+10
+    cursor.execute(sql)
+    jj = jj + 1
+conn.commit()
+conn.close()
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+#https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=epl&date=20191201
+
+    # 해당 url에서 html을 불러옴.
+url = requests.get('https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=primera&date=20191201')
+urlt = requests.get('https://sports.news.naver.com/wfootball/record/index.nhn?category=primera&tab=team')
+urlc = url.content
+urlct = urlt.content
+html = str(BeautifulSoup(urlc, "html.parser"))
+htmlt = str(BeautifulSoup(urlct, "html.parser"))
+#datat = str(htmlt.find_all("script", {"type": "text/javascript"}))
+rep1 = html.replace(':','')
+rep2 = rep1.replace(',','')
+rep1t = htmlt.replace(':','')
+rep2t = rep1t.replace(',','')
+
+sdata = rep2.split('"')
+sdatat = rep2t.split('"')
+#print(sdatat)
+
+rdata = list()
+rdatat = list()
+sdatatsp = list()
+i=0
+j=1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+while i < len(sdata):
+    if sdata[i] == 'playerName':
+        rdata.append(str(j)+'위')
+        rdata.append(str(sdata[i+2]))
+        j=j+1
+    elif sdata[i] =='teamName':
+        rdata.append(str(sdata[i+2]))
+    elif sdata[i] == 'goals':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'assist':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'attackPoint':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'shot':
+        rdata.append(str(sdata[i+1]))
+    elif sdata[i] == 'foul':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'booking':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'dismissal':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'cornerKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'penaltyKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'offside':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'onTargetShot':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'gameCount':
+        rdata.append(str(sdata[i + 1]))
+    i=i+1
+
+u=0
+k=0
+while u<len(rdata)/15:
+
+    cursor = conn.cursor()
+    a = rdata[k]
+    b = rdata[k+1]
+    c = rdata[k+2]
+    d = rdata[k+3]
+    e = rdata[k+4]
+    f = rdata[k+5]
+    g = rdata[k + 6]
+    aa = rdata[k + 7]
+    bb = rdata[k + 8]
+    cc = rdata[k + 9]
+    dd = rdata[k + 10]
+    ee = rdata[k + 11]
+    ff = rdata[k + 12]
+    gg = rdata[k + 13]
+    hh = rdata[k + 14]
+    sql = "INSERT INTO primerarecord(a,b,c,d,e,f,g,aa,bb,cc,dd,ee,ff,gg,hh) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"','"+ dd +"','"+ ee +"','"+ ff +"','"+ gg +"','"+ hh +"')"
+    k = k+15
+    cursor.execute(sql)
+    u = u + 1
+#순위 선수이름 소속 득점 도움 공격포인트 슈팅 파울 경고 퇴장 코너킥 패널티킥 오프사이드 유효슈팅 경기수
+#print(rdata)
+
+i=0
+j=1
+#팀순위 1 ~ 20
+while i < len(sdatat):
+    if sdatat[i] == 'teamName':
+        rdatat.append(str(j)+'위')
+        rdatat.append(str(sdatat[i + 2]))
+        rdatat.append(str(sdatat[i + 15]))
+        rdatat.append(str(sdatat[i + 7]))
+        rdatat.append(str(sdatat[i + 27]))
+        sdatatsp = sdatat[i+39].split('}')
+        rdatat.append(str(sdatatsp[0]))
+        rdatat.append(str(sdatat[i + 25]))
+        rdatat.append(str(sdatat[i + 5]))
+        rdatat.append(str(sdatat[i + 21]))
+        rdatat.append(str(sdatat[i + 29]))
+        j = j + 1
+    i = i + 1
+
+#순위 팀명 승점 경기수 승 무 패 득점 실점 득실차
+#1 ㄼㅍ 40 14 13 1 0 32 12 20
+jj=0
+k=0
+while jj<20:
+    cursor = conn.cursor()
+    a = rdatat[k]
+    b = rdatat[k+1]
+    c = rdatat[k+2]
+    d = rdatat[k+3]
+    e = rdatat[k+4]
+    f = rdatat[k+5]
+    g = rdatat[k+6]
+    aa = rdatat[k+7]
+    bb = rdatat[k+8]
+    cc = rdatat[k+9]
+    sql = "INSERT INTO primerarecordt(a,b,c,d,e,f,g,aa,bb,cc) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"')"
+    k = k+10
+    cursor.execute(sql)
+    jj = jj + 1
+conn.commit()
+conn.close()
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+#https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=epl&date=20191201
+
+    # 해당 url에서 html을 불러옴.
+url = requests.get('https://sports.news.naver.com/wfootball/record/ajaxHtmlPlayerRecord.nhn?year=2019&month=12&category=seria&date=20191201')
+urlt = requests.get('https://sports.news.naver.com/wfootball/record/index.nhn?category=seria&tab=team')
+urlc = url.content
+urlct = urlt.content
+html = str(BeautifulSoup(urlc, "html.parser"))
+htmlt = str(BeautifulSoup(urlct, "html.parser"))
+#datat = str(htmlt.find_all("script", {"type": "text/javascript"}))
+rep1 = html.replace(':','')
+rep2 = rep1.replace(',','')
+rep1t = htmlt.replace(':','')
+rep2t = rep1t.replace(',','')
+
+sdata = rep2.split('"')
+sdatat = rep2t.split('"')
+#print(sdatat)
+
+rdata = list()
+rdatat = list()
+sdatatsp = list()
+i=0
+j=1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+while i < len(sdata):
+    if sdata[i] == 'playerName':
+        rdata.append(str(j)+'위')
+        rdata.append(str(sdata[i+2]))
+        j=j+1
+    elif sdata[i] =='teamName':
+        rdata.append(str(sdata[i+2]))
+    elif sdata[i] == 'goals':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'assist':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'attackPoint':
+        rdata.append(str(sdata[i+3]))
+    elif sdata[i] == 'shot':
+        rdata.append(str(sdata[i+1]))
+    elif sdata[i] == 'foul':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'booking':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'dismissal':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'cornerKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'penaltyKicks':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'offside':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'onTargetShot':
+        rdata.append(str(sdata[i + 1]))
+    elif sdata[i] == 'gameCount':
+        rdata.append(str(sdata[i + 1]))
+    i=i+1
+
+u=0
+k=0
+while u<len(rdata)/15:
+
+    cursor = conn.cursor()
+    a = rdata[k]
+    b = rdata[k+1]
+    c = rdata[k+2]
+    d = rdata[k+3]
+    e = rdata[k+4]
+    f = rdata[k+5]
+    g = rdata[k + 6]
+    aa = rdata[k + 7]
+    bb = rdata[k + 8]
+    cc = rdata[k + 9]
+    dd = rdata[k + 10]
+    ee = rdata[k + 11]
+    ff = rdata[k + 12]
+    gg = rdata[k + 13]
+    hh = rdata[k + 14]
+    sql = "INSERT INTO seriarecord(a,b,c,d,e,f,g,aa,bb,cc,dd,ee,ff,gg,hh) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"','"+ dd +"','"+ ee +"','"+ ff +"','"+ gg +"','"+ hh +"')"
+    k = k+15
+    cursor.execute(sql)
+    u = u + 1
+#순위 선수이름 소속 득점 도움 공격포인트 슈팅 파울 경고 퇴장 코너킥 패널티킥 오프사이드 유효슈팅 경기수
+#print(rdata)
+
+i=0
+j=1
+#팀순위 1 ~ 20
+while i < len(sdatat):
+    if sdatat[i] == 'teamName':
+        rdatat.append(str(j)+'위')
+        rdatat.append(str(sdatat[i + 2]))
+        rdatat.append(str(sdatat[i + 15]))
+        rdatat.append(str(sdatat[i + 7]))
+        rdatat.append(str(sdatat[i + 27]))
+        sdatatsp = sdatat[i+39].split('}')
+        rdatat.append(str(sdatatsp[0]))
+        rdatat.append(str(sdatat[i + 25]))
+        rdatat.append(str(sdatat[i + 5]))
+        rdatat.append(str(sdatat[i + 21]))
+        rdatat.append(str(sdatat[i + 29]))
+        j = j + 1
+    i = i + 1
+
+#순위 팀명 승점 경기수 승 무 패 득점 실점 득실차
+#1 ㄼㅍ 40 14 13 1 0 32 12 20
+jj=0
+k=0
+while jj<len(rdatat)/10:
+    cursor = conn.cursor()
+    a = rdatat[k]
+    b = rdatat[k+1]
+    c = rdatat[k+2]
+    d = rdatat[k+3]
+    e = rdatat[k+4]
+    f = rdatat[k+5]
+    g = rdatat[k+6]
+    aa = rdatat[k+7]
+    bb = rdatat[k+8]
+    cc = rdatat[k+9]
+    sql = "INSERT INTO seriarecordt(a,b,c,d,e,f,g,aa,bb,cc) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"','"+ aa +"','"+ bb +"','"+ cc +"')"
+    k = k+10
+    cursor.execute(sql)
+    jj = jj + 1
+conn.commit()
+conn.close()
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+url = requests.get('https://sports.news.naver.com/kfootball/schedule/index.nhn?year=2019&category=amatch&date=20200325')
+urlc = url.content
+html = str(BeautifulSoup(urlc,"html.parser"))
+#저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+#변수.find("태그명",{"타입":"찾고자하는클래스명"}
+#data = str(html.find_all("script",{"type":"text/javascript"}))
+sdata = html.split('"')
+
+i = 0
+p=-1
+l=0
+rdata = list()
+DATE = list()
+#while문을 이용하여 필요한 데이터 저장
+while i<len(sdata):
+    if sdata[i] == 'date':
+        #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+        if sdata[i+2] == '20200325':
+            i = i + 1
+        else:
+            rdata.append(str(sdata[i+2]))
+            DATE.append(str(sdata[i+2]))
+            p = p+1
+            l=1
+    elif sdata[i] == 'scheduleList':
+        if sdata[i+2] == "empty":
+            rdata.append("")
+            rdata.append("")
+            rdata.append("")
+            rdata.append("")
+            rdata.append("경기가 없습니다")
+            l=0
+    elif sdata[i] == 'homeTeamName':
+        if l==0:
+            rdata.append(DATE[p])
+        rdata.append(str(sdata[i+2]))
+        rdata.append(str(sdata[i+10]))
+        rdata.append(str(sdata[i+14]))
+        rdata.append(str(sdata[i+6]))
+
+    elif sdata[i] == 'gameStartTime':
+        rdata.append(str(sdata[i+2]))
+        l=0
+
+
+
+    i = i + 1
+
+j=0
+k=0
+while j<len(rdata)/6-1:
+
+    cursor = conn.cursor()
+    a = rdata[k]
+    b = rdata[k+1]
+    c = rdata[k+2]
+    d = rdata[k+3]
+    e = rdata[k+4]
+    f = rdata[k+5]
+    sql = "INSERT INTO amatch(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+    k = k+6
+    cursor.execute(sql)
+    j = j + 1
+conn.commit()
+conn.close()
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 1
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#월 01~05 08~12 변경위한 while문
+while count!=11:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=bundesliga&date=20200108')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata[6])
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20200108':
+                i = i + 1
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+            #각 경기를 '//' 로 구분. 필요 시 수정가능
+#           rdata.append('//')
+
+
+
+        i = i + 1
+
+ #   print(rdata)
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+
+    if m==9:
+        n = 1
+        m = 0
+    elif m==5:
+        m = 8
+    else:
+        m = m + 1
+    count = count + 1
+
+
+
+    j=0
+    k=2
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO bundesliga(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 1
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#월 01~05 08~12 변경위한 while문
+while count!=6:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=carlingcup&date=20200108')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata[6])
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20200108':
+                i = i + 1
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+            #각 경기를 '//' 로 구분. 필요 시 수정가능
+#           rdata.append('//')
+
+
+
+        i = i + 1
+
+    #print(rdata)
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+
+    if m==9:
+        n = 1
+        m = 0
+    elif m==2:
+        m = 9
+    elif n==1:
+        m = 2
+    else:
+        m = m + 1
+    count = count + 1
+
+
+
+    j=0
+    k=1
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO carlingcup(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 2
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#월 01~05 08~12 변경위한 while문
+while count!=10:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=champs&date=20200108')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata[6])
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20200108':
+                i = i + 1
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+            #각 경기를 '//' 로 구분. 필요 시 수정가능
+#           rdata.append('//')
+
+
+
+        i = i + 1
+
+    print(rdata)
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+
+    if m==9:
+        n = 1
+        m = 0
+    elif m==5:
+        m = 8
+    else:
+        m = m + 1
+    count = count + 1
+
+
+
+    j=0
+    k=1
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO champs(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 1
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#월 01~05 08~12 변경위한 while문
+while count!=11:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=epl&date=20200108')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata[6])
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            if sdata[i+2] == '20200108da':
+                i = i + 1
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+
+        i = i + 1
+
+    print(rdata)
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+
+    if m==9:
+        n = 1
+        m = 0
+    elif m==5:
+        m = 8
+    else:
+        m = m + 1
+    count = count + 1
+
+
+
+    j=0
+    k=2
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO epl(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 1
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#월 01~05 08~12 변경위한 while문
+while count!=11:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=eredivisie&date=20200108')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata[6])
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20200108f':
+                i = i + 1
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+            #각 경기를 '//' 로 구분. 필요 시 수정가능
+#           rdata.append('//')
+
+
+
+        i = i + 1
+
+    #print(rdata)
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+
+    if m==9:
+        n = 1
+        m = 0
+    elif m==5:
+        m = 8
+    else:
+        m = m + 1
+    count = count + 1
+
+
+
+    j=0
+    k=2
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO eredivisie(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 2
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#월 01~05 08~12 변경위한 while문
+while count!=9:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=europa&date=20200108')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata[6])
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20200108f':
+                i = i + 1
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+            #각 경기를 '//' 로 구분. 필요 시 수정가능
+#           rdata.append('//')
+
+
+
+        i = i + 1
+
+    #print(rdata)
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+
+    if m==9:
+        n = 1
+        m = 0
+    elif m==5:
+        m = 9
+    else:
+        m = m + 1
+    count = count + 1
+
+
+
+    j=0
+    k=2
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO europa(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 1
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#월 01~05 08~12 변경위한 while문
+while count!=6:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=facup&date=20200108')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata[6])
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20200108d':
+                i = i + 1
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+            #각 경기를 '//' 로 구분. 필요 시 수정가능
+#           rdata.append('//')
+
+
+
+        i = i + 1
+
+    print(rdata)
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+
+
+    m = m + 1
+    count = count + 1
+
+
+
+    j=0
+    k=2
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO facup(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 3
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+while count!=9:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/kbaseball/schedule/index.nhn?date=20191026&month=' + str(n) + str(m) + '&year=2019&teamCode=')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("div",{"class":"tb_wrap"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata0 = html.replace('"td_date">','*td_date*')
+    sdata1 = sdata0.replace('"td_hour">', '*td_hour*')
+    sdata2 = sdata1.replace('"team_lft">', '*team_lft*')
+    sdata3 = sdata2.replace('"td_score">', '*td_score*')
+    sdata4 = sdata3.replace('"td_none">', '*td_none*')
+    sdata5 = sdata4.replace('"team_rgt">', '*team_rgt*')
+    sdata6 = sdata5.replace('<strong>', '*')
+    sdata7 = sdata6.replace('</strong>', '*')
+    sdata8 = sdata7.replace('</span>', '*')
+    sdata9 = sdata8.replace('<em>:</em>', '*')
+    sdata = sdata9.split("*")
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata10)
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'td_date':
+            rdata1 = str("2019년 " + sdata[i+2] + "일")
+            rdata2 = rdata1.replace(".","월 ")
+            rdata.append(str(rdata2))
+            DATE.append(str(rdata2))
+            p = p + 1
+            l = 1
+        elif sdata[i] == 'td_hour':
+            if sdata[i+1] == '-':
+                if l == 0:
+                    rdata.append(DATE[p])
+                rdata.append("경기가 없습니다")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                l=0
+            else:
+                if l == 0:
+                    rdata.append(DATE[p])
+                rdata.append(str(sdata[i+1]))
+                l=0
+        elif sdata[i] == 'team_lft':
+            rdata.append(str(sdata[i+1]))
+        elif sdata[i] == 'team_rgt':
+            rdata.append(str(sdata[i+1]))
+        elif sdata[i] == 'td_score':
+            if sdata[i+3] == "team_rgt":
+                rdata.append("")
+                rdata.append("경기취소")
+            else:
+                rdata.append(str(sdata[i+1]))
+                rdata.append(str(sdata[i+2]))
+                l = 0
+        i = i + 1
+   # print(rdata)
+
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+    if m==9:
+        n = 1
+        m = 0
+    else:
+        m = m + 1
+    count = count + 1
+
+#memo board
+
+
+    j=0
+    k=0
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO kbo(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 3
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+while count!=11:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/kfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=kleague&date=20191129')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20191129ffa':
+                i = i + 1
+                i = i
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+        i = i + 1
+    #print(rdata)
+
+    #월 변경. 09일 경우에는 10으로 변경/ 해당 안되면 정상적으로 1씩 증가
+    if m==9:
+        n = 1
+        m = 0
+    else:
+        m = m + 1
+    count = count + 1
+
+    j=0
+    k=2
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO kleague(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 3
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+while count!=10:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/kfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=kleague2&date=20191129')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20191129del':
+                i = i + 1
+                i = i
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+        i = i + 1
+    #print(rdata)
+
+    #월 변경. 09일 경우에는 10으로 변경/ 해당 안되면 정상적으로 1씩 증가
+    if m==9:
+        n = 1
+        m = 0
+    else:
+        m = m + 1
+    count = count + 1
+
+    j=0
+    k=2
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO kleague2(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 1
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#월 01~05 08~12 변경위한 while문
+while count!=11:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=ligue1&date=20200108')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata[6])
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20200108':
+                i = i + 1
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+            #각 경기를 '//' 로 구분. 필요 시 수정가능
+#           rdata.append('//')
+
+
+
+        i = i + 1
+
+    #print(rdata)
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+
+    if m==9:
+        n = 1
+        m = 0
+    elif m==5:
+        m = 8
+    else:
+        m = m + 1
+    count = count + 1
+
+
+
+    j=0
+    k=2
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO ligue1(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 3
+count = 1
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+#월 01~05 08~12 변경위한 while문
+while count!=9:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wbaseball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=mlb&date=20191029')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20191029d':
+                i = i + 1
+                i = i
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p + 1
+                l = 1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                rdata.append("")
+
+        elif sdata[i] == 'homeTeamName':
+            if l == 0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+6]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+2]))
+            l = 0
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+        elif sdata[i] == 'suspendedInfo':
+            if sdata[i + 2] == '경기취소':
+                rdata.reverse()
+
+                rdata.reverse()
+                rdata.append("경기취소")
+                rdata.append('//')
+            elif sdata[i + 2] == "경기연기":
+                rdata.reverse()
+
+                rdata.reverse()
+                rdata.append("경기연기")
+            else:
+                rdata.append("")
+
+        i = i + 1
+    print(rdata)
+
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+    if m==9:
+        n = 1
+        m = 0
+    else:
+        m = m + 1
+    count = count + 1
+
+    j=0
+    k=1
+    while j<len(rdata)/7:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        g = rdata[k + 6]
+        sql = "INSERT INTO mlb(a,b,c,d,e,f,g) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"')"
+        k = k+7
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 3
+count = 1
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+#월 01~05 08~12 변경위한 while문
+while count!=9:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wbaseball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=npb&date=20191021')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20191021':
+                i = i + 1
+                i = i
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p + 1
+                l = 1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                rdata.append("")
+
+        elif sdata[i] == 'homeTeamName':
+            if l == 0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+6]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+2]))
+            l = 0
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+        elif sdata[i] == 'suspendedInfo':
+            if sdata[i + 2] == '경기취소':
+                rdata.reverse()
+
+                rdata.reverse()
+                rdata.append("경기취소")
+                rdata.append('//')
+            elif sdata[i + 2] == "경기연기":
+                rdata.reverse()
+
+                rdata.reverse()
+                rdata.append("경기연기")
+            else:
+                rdata.append("")
+
+        i = i + 1
+    #print(rdata)
+
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+    if m==9:
+        n = 1
+        m = 0
+    else:
+        m = m + 1
+    count = count + 1
+
+    j=0
+    k=1
+    while j<len(rdata)/7:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        g = rdata[k + 6]
+        sql = "INSERT INTO npb(a,b,c,d,e,f,g) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"','"+ g +"')"
+        k = k+7
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 1
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#월 01~05 08~12 변경위한 while문
+while count!=11:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=primera&date=20200108')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata[6])
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20200108':
+                i = i + 1
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+            #각 경기를 '//' 로 구분. 필요 시 수정가능
+#           rdata.append('//')
+
+
+
+        i = i + 1
+
+    print(rdata)
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+
+    if m==9:
+        n = 1
+        m = 0
+    elif m==5:
+        m = 8
+    else:
+        m = m + 1
+    count = count + 1
+
+
+
+    j=0
+    k=2
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO primera(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+#-*- coding: utf-8 -*-
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from bs4 import BeautifulSoup
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# n,m = 월
+n = 0
+m = 1
+count = 1
+
+conn = pymysql.connect(host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        charset='utf8')
+
+#월 01~05 08~12 변경위한 while문
+while count!=11:
+    # 해당 url에서 html을 불러옴.
+    url = requests.get('https://sports.news.naver.com/wfootball/schedule/index.nhn?year=2019&month=' + str(n) + str(m) + '&category=seria&date=20200108')
+    urlc = url.content
+    html = str(BeautifulSoup(urlc,"html.parser"))
+    #저장된 html에서 find_all 함수를 이용하여 원하는 태그유형,이름을 찾음.
+    #변수.find("태그명",{"타입":"찾고자하는클래스명"}
+    #data = str(html.find_all("script",{"type":"text/javascript"}))
+
+    #저장이 정상적으로 되었는지 확인.
+    #print(data)
+
+    #split 구현 "을 기준으로 구분하여 배열로 저장.
+    sdata = html.split('"')
+
+    #split 정상적으로 되었는지 확인
+    #print(sdata[6])
+
+    #필요한 데이터 -> date / scheduleList / homeTeamName / awayTeamName / homeTeamScore / awayTeamScore / state 등
+    i = 0
+    p=-1
+    l=0
+    rdata = list()
+    DATE = list()
+    #while문을 이용하여 필요한 데이터 저장
+    while i<len(sdata):
+        if sdata[i] == 'date':
+            #웹사이트에서 오늘 날짜 경기는 상단부에 한번 더 출력되어 해당 데이터 제거 / 똑같이 구현하려면 if문 삭제하면 된다.
+            if sdata[i+2] == '20200108':
+                i = i + 1
+            else:
+                rdata.append(str(sdata[i+2]))
+                DATE.append(str(sdata[i+2]))
+                p = p+1
+                l=1
+        elif sdata[i] == 'scheduleList':
+            if sdata[i+2] == "empty":
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("")
+                rdata.append("경기가 없습니다")
+                l=0
+        elif sdata[i] == 'homeTeamName':
+            if l==0:
+                rdata.append(DATE[p])
+            rdata.append(str(sdata[i+2]))
+            rdata.append(str(sdata[i+10]))
+            rdata.append(str(sdata[i+14]))
+            rdata.append(str(sdata[i+6]))
+
+        elif sdata[i] == 'gameStartTime':
+            rdata.append(str(sdata[i+2]))
+            l=0
+            #각 경기를 '//' 로 구분. 필요 시 수정가능
+#           rdata.append('//')
+
+
+
+        i = i + 1
+
+    print(rdata)
+    #월 변경. 09일 경우에는 10으로 변경 / 05일 경우에는 epl이 06,07월 경기가 없어서 08로 변경 / 이 두개가 해당 안되면 정상적으로 1씩 증가
+
+    if m==9:
+        n = 1
+        m = 0
+    elif m==5:
+        m = 8
+    else:
+        m = m + 1
+    count = count + 1
+
+
+
+    j=0
+    k=1
+    while j<len(rdata)/6:
+
+        cursor = conn.cursor()
+        a = rdata[k]
+        b = rdata[k+1]
+        c = rdata[k+2]
+        d = rdata[k+3]
+        e = rdata[k+4]
+        f = rdata[k+5]
+        sql = "INSERT INTO seria(a,b,c,d,e,f) VALUES ('"+ a +"','"+ b +"','"+ c +"','"+ d +"','"+ e +"','"+ f +"')"
+        k = k+6
+        cursor.execute(sql)
+        j = j + 1
+conn.commit()
+conn.close()
+
+import pymysql.cursors
+
+conn = pymysql.connect(host='35.175.193.49',
+        user='root',
+        password='root',
+        charset='utf8mb4')
+
+try:
+    with conn.cursor() as cursor:
+        sql = 'CREATE DATABASE Sports'
+        cursor.execute(sql)
+    conn.commit()
+finally:
+    conn.close()
+import pymysql.cursors
+import sqlite3
+
+conn = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='root',
+        db='Sports',
+        autocommit=True)
+
+cursor=conn.cursor()
+
+sql='''
+    create table test2(
+    a int)
+'''
+
+cursor.execute(sql)
+conn.commit()
+conn.close()
+#by forever1296
+#패키지 import
+import requests
+from datetime import datetime
+from selenium import webdriver
+from bs4 import BeautifulSoup
+from selenium.webdriver.common.keys import Keys
+import time
+import pymysql.cursors
+
+#오늘 날짜
+now_all = datetime.now()
+now_want = now_all.strftime('%Y%m%d')
+
+# 옵션 추가: 브라우저 창을 띄우지 않은 채 1920x1080 사이즈로 브라우저 실행
+options = webdriver.ChromeOptions()
+options.add_argument('window-size=1920x1080')
+
+driver = webdriver.Chrome(executable_path="C:\\Users\myken\PycharmProjects\\untitled\webdriver\chromedriver.exe",options = options)
+
+url = ('https://www.premierleague.com/players')
+driver.get(url)
+
+body = driver.find_element_by_tag_name('body')
+for i in range(17):
+    body.send_keys(Keys.END)
+    time.sleep(2.0)
+
+html = driver.page_source
+soup = BeautifulSoup(html, 'html.parser')
+#data = soup.select('')
+
+sdata = list()
+data = str(soup)
+sdata = data.split('"')
+#print(sdata)
+
+rdata = list()
+rdata2 = list()
+rdatat = list()
+i=0
+l=0
+while i<len(sdata):
+#while i<200:
+    if sdata[i] == 'playerName':
+        rdata.append('https:' + str(sdata[i + 2]))
+        rdatat.append(rdata[l].replace("overview","stats"))
+        l = l+1
+    i = i + 1
+j=0
+while j<len(rdatat):
+    url2 = requests.get(rdatat[j])
+    urlc2 = url2.content
+    html2 = str(BeautifulSoup(urlc2, "html.parser"))
+    rep1 = html2.replace('>','"')
+    rep2 = rep1.replace('<','"')
+    rep3 = rep2.replace('\n','"')
+    rep4 = rep3.replace(' ', '')
+    sdata2 = rep4.split('"')
+    P=0
+    Y=0
+    Ya=0
+    Yb=0
+    while P < len(sdata2):
+        if sdata2[P] == 'imgContainer':
+            rdata2.append(str(sdata2[P+5]))
+        elif sdata2[P] == 'Club':
+            if Yb==0:
+                rdata2.append(str(sdata2[P + 13]))
+                Yb=Yb+1
+            else:
+                Yb=Yb
+        elif sdata2[P] == 'Appearances':
+            if Y==0:
+                if Yb==0:
+                    rdata2.append("")
+                rdata2.append(str(sdata2[P + 7]))
+                Y=Y+1
+            else:
+                Y=Y
+        elif sdata2[P] == 'goals':
+            if Ya==0:
+                rdata2.append(str(sdata2[P + 3]))
+                Ya=Ya+1
+            else:
+                Ya=Ya
+        elif sdata2[P] == 'goal_assist':
+            rdata2.append(str(sdata2[P + 3]))
+        elif sdata2[P] == 'wins':
+            rdata2.append(str(sdata2[P + 3]))
+        elif sdata2[P] == 'losses':
+            rdata2.append(str(sdata2[P + 3]))
+        elif sdata2[P] == 'fouls':
+            rdata2.append(str(sdata2[P + 3]))
+        P = P+1
+
+    j=j+1
+print(rdata2)
+
+#abcdfgeh
+#이름 / 팀 / 점수 / 골 / 승 / 패 / 도움 / 파울
